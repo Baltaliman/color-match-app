@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-
+// Simple utility functions
 function rgbToHsv(r, g, b) {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -21,18 +21,25 @@ function rgbToHsv(r, g, b) {
 }
 
 function harmonyScore(colors) {
+  // colors: [{h,s,v}, ...]
   let score = 100;
   const hues = colors.map(c => c.h);
   const sats = colors.map(c => c.s);
   const vals = colors.map(c => c.v);
 
-  const spread = Math.max(...hues) - Math.min(...hues);
-  if (spread < 15) score -= 30;
-  else if (spread > 200) score -= 20;
+  // Hue spread
+  const maxHue = Math.max(...hues);
+  const minHue = Math.min(...hues);
+  const spread = maxHue - minHue;
 
+  if (spread < 15) score -= 30;          // muddy / too similar
+  else if (spread > 200) score -= 20;    // harsh contrast
+
+  // Saturation balance
   const avgSat = sats.reduce((a,b)=>a+b,0)/sats.length;
   if (avgSat > 0.85) score -= 15;
 
+  // Brightness balance
   const maxV = Math.max(...vals);
   const minV = Math.min(...vals);
   if (maxV - minV < 0.15) score -= 10;
@@ -41,14 +48,21 @@ function harmonyScore(colors) {
 }
 
 function verdict(score) {
-  if (score >= 75) return "Works well together";
-  if (score >= 50) return "Borderline match";
-  return "Likely clashes";
+  if (score >= 75) return "✅ Works well together";
+  if (score >= 50) return "⚠️ Borderline match";
+  return "❌ Likely clashes";
 }
 
-export default function App() {
+export default function ColorMatchApp() {
+  const [images, setImages] = useState([null, null, null]);
   const [colors, setColors] = useState([]);
   const [score, setScore] = useState(null);
+
+  function resetOutfit() {
+    setImages([null, null, null]);
+    setColors([]);
+    setScore(null);
+  }
 
   function handleUpload(index, file) {
     const img = new Image();
@@ -66,8 +80,8 @@ export default function App() {
         r+=data[i]; g+=data[i+1]; b+=data[i+2]; count++;
       }
       r=Math.round(r/count); g=Math.round(g/count); b=Math.round(b/count);
-
       const hsv = rgbToHsv(r,g,b);
+
       const newColors = [...colors];
       newColors[index] = hsv;
       setColors(newColors);
@@ -76,26 +90,39 @@ export default function App() {
 
   function analyze() {
     if (colors.length === 3) {
-      setScore(harmonyScore(colors));
+      const s = harmonyScore(colors);
+      setScore(s);
     }
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Clothing Color Match (3 Items)</h2>
+    <div className="min-h-screen p-6 bg-gray-50">
+      <h1 className="text-2xl font-bold mb-4">Clothing Color Match (3 Items)</h1>
 
-      {[0,1,2].map(i => (
-        <input key={i} type="file" accept="image/*"
-          onChange={e => handleUpload(i, e.target.files[0])} />
-      ))}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {[0,1,2].map(i => (
+          <input key={i} type="file" accept="image/*"
+            onChange={e => handleUpload(i, e.target.files[0])}
+            className="p-2 border rounded" />
+        ))}
+      </div>
 
-      <br /><br />
-      <button onClick={analyze}>Analyze Outfit</button>
+      <div className="flex gap-4">
+      <button onClick={analyze}
+        className="px-4 py-2 bg-black text-white rounded">
+        Analyze Outfit
+      </button>
+
+      <button onClick={resetOutfit}
+        className="px-4 py-2 bg-gray-200 text-black rounded">
+        Start New Outfit
+      </button>
+    </div>
 
       {score !== null && (
-        <div>
-          <h3>Score: {score}/100</h3>
-          <p>{verdict(score)}</p>
+        <div className="mt-6">
+          <p className="text-xl font-semibold">Score: {score}/100</p>
+          <p className="mt-2">{verdict(score)}</p>
         </div>
       )}
     </div>
