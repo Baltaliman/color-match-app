@@ -45,6 +45,7 @@ function verdict(score) {
 
 export default function App() {
   const [colors, setColors] = useState([]);
+  const [resetKey, setResetKey] = useState(0);
   const [score, setScore] = useState(null);
 
   function handleUpload(index, file) {
@@ -75,10 +76,12 @@ export default function App() {
     }
   }
 
-  function reset() {
-    setColors([]);
-    setScore(null);
-  }
+ function reset() {
+  setColors([]);
+  setScore(null);
+  setResetKey(prev => prev + 1);
+}
+
 
   return (
     <div style={{ padding: 20 }}>
@@ -86,7 +89,7 @@ export default function App() {
 
       {[0,1,2].map(i => (
         <input
-          key={i}
+          key={resetKey + "-" + i}
           type="file"
           accept="image/*"
           onChange={e => handleUpload(i, e.target.files[0])}
